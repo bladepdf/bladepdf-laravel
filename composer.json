@@ -1,0 +1,49 @@
+{
+  "name": "bladepdf/laravel",
+  "description": "Official Laravel package for the BladePDF PDF generation API.",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "bladepdf",
+    "laravel",
+    "pdf",
+    "puppeteer",
+    "api"
+  ],
+  "require": {
+    "php": "^8.2",
+    "illuminate/http": "^10.0|^11.0|^12.0",
+    "illuminate/support": "^10.0|^11.0|^12.0",
+    "illuminate/view": "^10.0|^11.0|^12.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^8.0|^9.0|^10.0",
+    "phpunit/phpunit": "^10.5|^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "BladePDF\\Laravel\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "BladePDF\\Laravel\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "BladePDF\\Laravel\\BladePdfServiceProvider"
+      ],
+      "aliases": {
+        "BladePDF": "BladePDF\\Laravel\\Facades\\BladePDF"
+      }
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "lint": "find src tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

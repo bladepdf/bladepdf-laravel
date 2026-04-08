@@ -1,0 +1,50 @@
+name: ci
+
+on:
+    push:
+        branches:
+            - main
+            - master
+    pull_request:
+
+jobs:
+    tests:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - php: '8.2'
+                      testbench: '^8.0'
+                    - php: '8.3'
+                      testbench: '^9.0'
+                    - php: '8.4'
+                      testbench: '^10.0'
+
+        name: PHP ${{ matrix.php }} / Testbench ${{ matrix.testbench }}
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  coverage: none
+                  tools: composer:v2
+
+            - name: Configure Testbench version
+              run: composer require --dev --no-interaction --no-update orchestra/testbench:${{ matrix.testbench }}
+
+            - name: Install dependencies
+              run: composer update --prefer-dist --no-interaction
+
+            - name: Validate composer.json
+              run: composer validate --strict
+
+            - name: Run lint
+              run: composer lint
+
+            - name: Run tests
+              run: composer test
