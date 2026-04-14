@@ -60,7 +60,7 @@ class BladePdfClient
                 'verify' => (bool) $this->config->get('bladepdf.verify_ssl', true),
                 'multipart' => $multipart,
             ])
-            ->send('POST', rtrim((string) $this->config->get('bladepdf.base_url', 'https://api.bladepdf.com'), '/').'/render');
+            ->send('POST', rtrim((string) $this->config->get('bladepdf.base_url', 'https://app.bladepdf.com'), '/').'/api/render');
 
         if (! $response->successful()) {
             throw RenderFailedException::fromResponse($response->status(), $response->body());
