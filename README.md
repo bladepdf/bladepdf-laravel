@@ -53,8 +53,8 @@ All fields are optional and are sent as `multipart/form-data` to `POST https://a
 - `wait_function`
 - `emulate_media`
 - `html`
-- `header_template`
-- `footer_template`
+- `header_html`
+- `footer_html`
 - `pdf_options` (JSON encoded)
 
 ## Asset pipeline

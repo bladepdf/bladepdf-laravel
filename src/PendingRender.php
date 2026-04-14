@@ -186,8 +186,8 @@ class PendingRender
             'wait_function' => $this->waitFunction,
             'emulate_media' => $this->emulateMedia,
             'html' => $resolved['html'],
-            'header_template' => $resolved['header_html'],
-            'footer_template' => $resolved['footer_html'],
+            'header_html' => $resolved['header_html'],
+            'footer_html' => $resolved['footer_html'],
             'pdf_options' => $this->pdfOptions,
         ], $resolved['assets']);
     }
