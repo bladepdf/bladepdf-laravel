@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BladePDF\Laravel;
 
-use BladePDF\Laravel\Exceptions\MissingTokenException;
+use BladePDF\Laravel\Exceptions\MissingApiKeyException;
 use BladePDF\Laravel\Exceptions\RenderFailedException;
 use BladePDF\Laravel\Support\ResolvedAsset;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
@@ -22,10 +22,10 @@ class BladePdfClient
      */
     public function render(array $fields, array $assets = []): string
     {
-        $token = trim((string) $this->config->get('bladepdf.token'));
+        $apiKey = trim((string) $this->config->get('bladepdf.api_key'));
 
-        if ($token === '') {
-            throw new MissingTokenException('Missing BladePDF API token. Set BLADEPDF_TOKEN in your environment.');
+        if ($apiKey === '') {
+            throw new MissingApiKeyException('Missing BladePDF API Key. Set BLADEPDF_API_KEY in your environment.');
         }
 
         $multipart = [];
@@ -47,7 +47,7 @@ class BladePdfClient
             $multipart[] = $asset->toMultipartPart();
         }
 
-        $response = Http::withToken($token)
+        $response = Http::withToken($apiKey)
             ->accept('application/pdf')
             ->timeout((int) $this->config->get('bladepdf.timeout', 60))
             ->connectTimeout((int) $this->config->get('bladepdf.connect_timeout', 10))

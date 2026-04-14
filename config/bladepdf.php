@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'base_url' => env('BLADEPDF_BASE_URL', 'https://api.bladepdf.com'),
 
-    'token' => env('BLADEPDF_TOKEN'),
+    'api_key' => env('BLADEPDF_API_KEY'),
 
     'timeout' => (int) env('BLADEPDF_TIMEOUT', 60),
 
@@ -13,7 +13,7 @@ return [
 
     'retry_times' => (int) env('BLADEPDF_RETRY_TIMES', 1),
 
-    'retry_sleep' => (int) env('BLADEPDF_RETRY_SLEEP', 200),
+    'retry_sleep' => (int) env('BLADEPDF_RETRY_SLEEP', 1000),
 
     'verify_ssl' => filter_var(env('BLADEPDF_VERIFY_SSL', true), FILTER_VALIDATE_BOOL),
 

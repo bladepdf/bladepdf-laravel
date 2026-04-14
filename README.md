@@ -14,10 +14,10 @@ Publish config:
 php artisan vendor:publish --tag=bladepdf-config
 ```
 
-Set your API token:
+Set your API Key:
 
 ```env
-BLADEPDF_TOKEN=your_access_token
+BLADEPDF_API_KEY=your_api_key
 ```
 
 ## Basic usage

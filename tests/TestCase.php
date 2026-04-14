@@ -16,7 +16,8 @@ abstract class TestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
-        $app['config']->set('app.url', 'http://localhost');
-        $app['config']->set('bladepdf.token', 'test-token');
+        $app['config']->set('app.url', env('APP_URL', 'http://localhost'));
+        $app['config']->set('bladepdf.base_url', env('BLADEPDF_BASE_URL', 'http://localhost'));
+        $app['config']->set('bladepdf.api_key', env('BLADEPDF_API_KEY', 'test-api-key'));
     }
 }
