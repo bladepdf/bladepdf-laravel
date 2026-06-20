@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'base_url' => env('BLADEPDF_BASE_URL', 'https://app.bladepdf.com'),
+    'base_url' => env('BLADEPDF_BASE_URL', 'https://api.bladepdf.com'),
 
     'api_key' => env('BLADEPDF_API_KEY'),
 

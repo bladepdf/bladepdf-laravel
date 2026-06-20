@@ -12,6 +12,15 @@ use Illuminate\Support\Facades\Http;
 
 class BladePdfClient
 {
+    /**
+     * @var array<string, string>
+     */
+    protected const HTML_FILE_FIELDS = [
+        'html' => 'html.html',
+        'header_html' => 'header.html',
+        'footer_html' => 'footer.html',
+    ];
+
     public function __construct(protected ConfigRepository $config)
     {
     }
@@ -22,6 +31,7 @@ class BladePdfClient
      */
     public function render(array $fields, array $assets = []): string
     {
+        $baseUrl = rtrim((string) $this->config->get('bladepdf.base_url', 'https://api.bladepdf.com'), '/');
         $apiKey = trim((string) $this->config->get('bladepdf.api_key'));
 
         if ($apiKey === '') {
@@ -32,6 +42,19 @@ class BladePdfClient
 
         foreach ($fields as $name => $value) {
             if ($value === null) {
+                continue;
+            }
+
+            if (isset(self::HTML_FILE_FIELDS[$name])) {
+                $multipart[] = [
+                    'name' => $name,
+                    'contents' => (string) $value,
+                    'filename' => self::HTML_FILE_FIELDS[$name],
+                    'headers' => [
+                        'Content-Type' => 'text/html; charset=UTF-8',
+                    ],
+                ];
+
                 continue;
             }
 
@@ -60,12 +83,17 @@ class BladePdfClient
                 'verify' => (bool) $this->config->get('bladepdf.verify_ssl', true),
                 'multipart' => $multipart,
             ])
-            ->send('POST', rtrim((string) $this->config->get('bladepdf.base_url', 'https://app.bladepdf.com'), '/').'/api/render');
+            ->send('POST', $this->endpointUrl($baseUrl, '/render'));
 
         if (! $response->successful()) {
             throw RenderFailedException::fromResponse($response->status(), $response->body());
         }
 
         return $response->body();
+    }
+
+    protected function endpointUrl(string $baseUrl, string $path): string
+    {
+        return rtrim($baseUrl, '/').'/'.ltrim($path, '/');
     }
 }
