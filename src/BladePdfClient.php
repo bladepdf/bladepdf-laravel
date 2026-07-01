@@ -13,12 +13,26 @@ use Illuminate\Support\Facades\Http;
 class BladePdfClient
 {
     /**
-     * @var array<string, string>
+     * @var array<string, array{filename:string,content_type:string,json?:bool}>
      */
-    protected const HTML_FILE_FIELDS = [
-        'html' => 'html.html',
-        'header_html' => 'header.html',
-        'footer_html' => 'footer.html',
+    protected const FILE_FIELDS = [
+        'html' => [
+            'filename' => 'html.html',
+            'content_type' => 'text/html; charset=UTF-8',
+        ],
+        'header_html' => [
+            'filename' => 'header.html',
+            'content_type' => 'text/html; charset=UTF-8',
+        ],
+        'footer_html' => [
+            'filename' => 'footer.html',
+            'content_type' => 'text/html; charset=UTF-8',
+        ],
+        'context' => [
+            'filename' => 'context.json',
+            'content_type' => 'application/json; charset=UTF-8',
+            'json' => true,
+        ],
     ];
 
     public function __construct(protected ConfigRepository $config)
@@ -45,13 +59,17 @@ class BladePdfClient
                 continue;
             }
 
-            if (isset(self::HTML_FILE_FIELDS[$name])) {
+            if (isset(self::FILE_FIELDS[$name])) {
+                $fileField = self::FILE_FIELDS[$name];
+
                 $multipart[] = [
                     'name' => $name,
-                    'contents' => (string) $value,
-                    'filename' => self::HTML_FILE_FIELDS[$name],
+                    'contents' => ($fileField['json'] ?? false)
+                        ? $this->encodeJson($value, $name === 'context')
+                        : (string) $value,
+                    'filename' => $fileField['filename'],
                     'headers' => [
-                        'Content-Type' => 'text/html; charset=UTF-8',
+                        'Content-Type' => $fileField['content_type'],
                     ],
                 ];
 
@@ -60,9 +78,7 @@ class BladePdfClient
 
             $multipart[] = [
                 'name' => $name,
-                'contents' => is_array($value)
-                    ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-                    : (string) $value,
+                'contents' => $this->encodeField($value),
             ];
         }
 
@@ -95,5 +111,27 @@ class BladePdfClient
     protected function endpointUrl(string $baseUrl, string $path): string
     {
         return rtrim($baseUrl, '/').'/'.ltrim($path, '/');
+    }
+
+    protected function encodeField(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_array($value) || $value instanceof \JsonSerializable || $value instanceof \stdClass) {
+            return $this->encodeJson($value);
+        }
+
+        return (string) $value;
+    }
+
+    protected function encodeJson(mixed $value, bool $emptyArrayAsObject = false): string
+    {
+        if ($emptyArrayAsObject && is_array($value) && $value === []) {
+            return '{}';
+        }
+
+        return json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 }

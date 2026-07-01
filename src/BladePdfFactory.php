@@ -21,13 +21,21 @@ class BladePdfFactory
         return new PendingRender($this->client, $this->assetResolver, $this->viewFactory);
     }
 
-    public function render(string $view, array $data = []): PendingRender
+    public function fromView(string $view, array $data = []): PendingRender
     {
-        return $this->make()->render($view, $data);
+        return $this->make()->fromView($view, $data);
     }
 
-    public function html(string $html): PendingRender
+    public function fromHtml(string $html): PendingRender
     {
-        return $this->make()->html($html);
+        return $this->make()->fromHtml($html);
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function fromTemplate(string $templateId, array $context = []): PendingRender
+    {
+        return $this->make()->fromTemplate($templateId, $context);
     }
 }
