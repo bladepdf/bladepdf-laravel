@@ -69,6 +69,11 @@ class PendingRender
     protected ?bool $storePdf = null;
 
     /**
+     * @var array{url:string,secret:string,events:list<string>}|null
+     */
+    protected ?array $webhook = null;
+
+    /**
      * @var array<int, array{path:string,target?:string,mime?:string}>
      */
     protected array $manualAssets = [];
@@ -319,6 +324,28 @@ class PendingRender
         return $this->storePdf(false);
     }
 
+    /**
+     * @param  list<string>  $events
+     */
+    public function webhook(string $url, string $secret, array $events = ['pdf.rendered', 'pdf.failed']): self
+    {
+        $this->webhook = [
+            'url' => $this->normalizeWebhookUrl($url),
+            'secret' => $this->normalizeWebhookSecret($secret),
+            'events' => $this->normalizeWebhookEvents($events),
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @param  list<string>  $events
+     */
+    public function withWebhook(string $url, string $secret, array $events = ['pdf.rendered', 'pdf.failed']): self
+    {
+        return $this->webhook($url, $secret, $events);
+    }
+
     public function format(string $format): self
     {
         return $this->withOptions(['format' => $format]);
@@ -432,6 +459,7 @@ class PendingRender
             'emulate_media' => $this->emulateMedia,
             'metadata' => $this->metadataForRequest(),
             'store_pdf' => $this->storePdf,
+            'webhook' => $this->webhook,
             'html' => $resolved['html'],
             'header_html' => $resolved['header_html'],
             'footer_html' => $resolved['footer_html'],
@@ -495,6 +523,7 @@ class PendingRender
             'emulate_media' => $this->emulateMedia,
             'metadata' => $this->metadataForRequest(),
             'store_pdf' => $this->storePdf,
+            'webhook' => $this->webhook,
             'pdf_options' => $this->pdfOptionsForRequest(),
         ], $resolved['assets']);
     }
@@ -553,6 +582,68 @@ class PendingRender
         }
 
         return $target;
+    }
+
+    protected function normalizeWebhookUrl(string $url): string
+    {
+        $url = trim($url);
+
+        if ($url === '' || strlen($url) > 1024 || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            throw new InvalidRenderConfigurationException('BladePDF webhook URL must be a valid http or https URL.');
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if (! is_string($scheme) || ! in_array(strtolower($scheme), ['http', 'https'], true)) {
+            throw new InvalidRenderConfigurationException('BladePDF webhook URL must be a valid http or https URL.');
+        }
+
+        return $url;
+    }
+
+    protected function normalizeWebhookSecret(string $secret): string
+    {
+        $secret = trim($secret);
+
+        if ($secret === '') {
+            throw new InvalidRenderConfigurationException('BladePDF webhook secret cannot be empty.');
+        }
+
+        if (strlen($secret) > 1024) {
+            throw new InvalidRenderConfigurationException('BladePDF webhook secret may not exceed 1024 characters.');
+        }
+
+        return $secret;
+    }
+
+    /**
+     * @param  list<string>  $events
+     * @return list<string>
+     */
+    protected function normalizeWebhookEvents(array $events): array
+    {
+        $allowed = ['pdf.rendered', 'pdf.failed'];
+        $normalized = [];
+
+        foreach ($events as $event) {
+            if (! is_string($event)) {
+                throw new InvalidRenderConfigurationException('BladePDF webhook events must be strings.');
+            }
+
+            $event = trim($event);
+            if (! in_array($event, $allowed, true)) {
+                throw new InvalidRenderConfigurationException('BladePDF webhook events must be one of: pdf.rendered, pdf.failed.');
+            }
+
+            if (! in_array($event, $normalized, true)) {
+                $normalized[] = $event;
+            }
+        }
+
+        if ($normalized === []) {
+            throw new InvalidRenderConfigurationException('BladePDF webhook events cannot be empty.');
+        }
+
+        return $normalized;
     }
 
     protected function formatPdfLength(string|int|float $value, string $unit): string

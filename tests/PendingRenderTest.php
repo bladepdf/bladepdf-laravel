@@ -22,6 +22,7 @@ class PendingRenderTest extends TestCase
             ])
             ->reference('INV-1')
             ->storePdf()
+            ->webhook('https://example.com/bladepdf', 'whsec_request', ['pdf.rendered'])
             ->overrideAsset('logo.png', $assetPath, 'image/png')
             ->format('A4')
             ->margins(10, 10, 15, 10)
@@ -36,6 +37,11 @@ class PendingRenderTest extends TestCase
         $this->assertSame(['invoice' => ['number' => 'INV-1']], $client->fields['context']);
         $this->assertSame(['reference' => 'INV-1'], $client->fields['metadata']);
         $this->assertTrue($client->fields['store_pdf']);
+        $this->assertSame([
+            'url' => 'https://example.com/bladepdf',
+            'secret' => 'whsec_request',
+            'events' => ['pdf.rendered'],
+        ], $client->fields['webhook']);
         $this->assertSame('A4', $client->fields['pdf_options']['format']);
         $this->assertSame('10px', $client->fields['pdf_options']['margin']['top']);
         $this->assertSame('15px', $client->fields['pdf_options']['margin']['bottom']);
@@ -122,6 +128,26 @@ class PendingRenderTest extends TestCase
 
         $this->pendingRender(new CapturingBladePdfClient())
             ->overrideAsset('images/logo.png', __FILE__);
+    }
+
+    public function test_webhook_configuration_is_validated(): void
+    {
+        $this->expectException(InvalidRenderConfigurationException::class);
+
+        $this->pendingRender(new CapturingBladePdfClient())
+            ->fromHtml('<h1>Hello</h1>')
+            ->webhook('ftp://example.com/hook', 'whsec_test')
+            ->pdf();
+    }
+
+    public function test_webhook_events_are_validated(): void
+    {
+        $this->expectException(InvalidRenderConfigurationException::class);
+
+        $this->pendingRender(new CapturingBladePdfClient())
+            ->fromHtml('<h1>Hello</h1>')
+            ->webhook('https://example.com/hook', 'whsec_test', ['invoice.paid'])
+            ->pdf();
     }
 
     public function test_client_encodes_booleans_and_empty_context_for_multipart_fields(): void

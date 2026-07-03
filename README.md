@@ -65,6 +65,7 @@ All fields are optional and are sent as `multipart/form-data` to `POST https://a
 - `source` (JSON encoded)
 - `metadata` (JSON encoded)
 - `store_pdf`
+- `webhook` (JSON encoded)
 - `wait_until`
 - `wait_function`
 - `emulate_media`
@@ -97,6 +98,25 @@ BladePDF::fromView('pdf.invoice', ['invoice' => $invoice])
 ```
 
 `templateName()` is only accepted for HTML renders. Cloud template renders already identify the stored template through `templateId`.
+
+## Per-request webhooks
+
+Use `webhook()` when a single render should notify a specific endpoint in addition to any dashboard-configured webhooks:
+
+```php
+BladePDF::fromTemplate('invoice.standard', $context)
+    ->reference($invoice->uuid)
+    ->webhook('https://example.com/bladepdf/webhook', 'whsec_request_secret')
+    ->pdf();
+```
+
+The optional third argument limits which events are delivered:
+
+```php
+BladePDF::fromHtml($html)
+    ->webhook('https://example.com/bladepdf/webhook', 'whsec_request_secret', ['pdf.rendered'])
+    ->pdf();
+```
 
 ## PDF options
 
