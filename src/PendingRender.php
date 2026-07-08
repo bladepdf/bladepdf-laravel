@@ -467,6 +467,39 @@ class PendingRender
         ], $resolved['assets']);
     }
 
+    public function async(): RenderSubmission
+    {
+        if ($this->storePdf !== true) {
+            throw new InvalidRenderConfigurationException(
+                'BladePDF async renders require storePdf() so the generated PDF remains available after the request is accepted.',
+            );
+        }
+
+        if ($this->source === self::SOURCE_TEMPLATE) {
+            return $this->renderTemplateAsync();
+        }
+
+        $bodyHtml = $this->rawHtml ?? $this->renderView($this->view, $this->data);
+        $headerHtml = $this->headerHtml ?? ($this->headerView ? $this->renderView($this->headerView, $this->headerData) : null);
+        $footerHtml = $this->footerHtml ?? ($this->footerView ? $this->renderView($this->footerView, $this->footerData) : null);
+
+        $resolved = $this->assetResolver->resolve($bodyHtml, $headerHtml, $footerHtml, $this->manualAssets);
+
+        return $this->client->renderAsync([
+            'source' => ['type' => self::SOURCE_HTML],
+            'wait_until' => $this->waitUntil,
+            'wait_function' => $this->waitFunction,
+            'emulate_media' => $this->emulateMedia,
+            'metadata' => $this->metadataForRequest(),
+            'store_pdf' => $this->storePdf,
+            'webhook' => $this->webhook,
+            'html' => $resolved['html'],
+            'header_html' => $resolved['header_html'],
+            'footer_html' => $resolved['footer_html'],
+            'pdf_options' => $this->pdfOptionsForRequest(),
+        ], $resolved['assets']);
+    }
+
     public function response(?string $filename = 'document.pdf'): Response
     {
         return response($this->pdf(), 200, [
@@ -513,6 +546,34 @@ class PendingRender
         $resolved = $this->assetResolver->resolve('', null, null, $this->manualAssets);
 
         return $this->client->render([
+            'source' => [
+                'type' => self::SOURCE_TEMPLATE,
+                'templateId' => $this->templateId,
+            ],
+            'context' => $this->context,
+            'wait_until' => $this->waitUntil,
+            'wait_function' => $this->waitFunction,
+            'emulate_media' => $this->emulateMedia,
+            'metadata' => $this->metadataForRequest(),
+            'store_pdf' => $this->storePdf,
+            'webhook' => $this->webhook,
+            'pdf_options' => $this->pdfOptionsForRequest(),
+        ], $resolved['assets']);
+    }
+
+    protected function renderTemplateAsync(): RenderSubmission
+    {
+        if ($this->templateId === null) {
+            throw new InvalidRenderConfigurationException('BladePDF template source requires a template id.');
+        }
+
+        if ($this->headerView !== null || $this->headerHtml !== null || $this->footerView !== null || $this->footerHtml !== null) {
+            throw new InvalidRenderConfigurationException('BladePDF cloud template renders do not support header_html or footer_html overrides.');
+        }
+
+        $resolved = $this->assetResolver->resolve('', null, null, $this->manualAssets);
+
+        return $this->client->renderAsync([
             'source' => [
                 'type' => self::SOURCE_TEMPLATE,
                 'templateId' => $this->templateId,

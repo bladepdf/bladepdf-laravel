@@ -7,6 +7,7 @@ namespace BladePDF\Laravel\Tests;
 use BladePDF\Laravel\BladePdfClient;
 use BladePDF\Laravel\Exceptions\InvalidRenderConfigurationException;
 use BladePDF\Laravel\PendingRender;
+use BladePDF\Laravel\RenderSubmission;
 use BladePDF\Laravel\Support\AssetResolver;
 
 class PendingRenderTest extends TestCase
@@ -85,6 +86,41 @@ class PendingRenderTest extends TestCase
         $this->assertTrue($client->fields['pdf_options']['preferCSSPageSize']);
         $this->assertTrue($client->fields['pdf_options']['waitForFonts']);
         $this->assertTrue($client->fields['pdf_options']['outline']);
+    }
+
+    public function test_it_submits_an_async_render_and_returns_its_identifiers(): void
+    {
+        $client = new CapturingBladePdfClient();
+
+        $submission = $this->pendingRender($client)
+            ->fromTemplate('invoice.standard', [
+                'invoice' => ['number' => 'INV-1'],
+            ])
+            ->reference('INV-1')
+            ->storePdf()
+            ->webhook('https://example.com/bladepdf', 'whsec_request')
+            ->async();
+
+        $this->assertSame('request-async-1', $submission->requestId);
+        $this->assertSame('INV-1', $submission->reference);
+        $this->assertSame([
+            'type' => 'template',
+            'templateId' => 'invoice.standard',
+        ], $client->fields['source']);
+        $this->assertSame(['invoice' => ['number' => 'INV-1']], $client->fields['context']);
+        $this->assertSame(['reference' => 'INV-1'], $client->fields['metadata']);
+        $this->assertTrue($client->fields['store_pdf']);
+        $this->assertSame('https://example.com/bladepdf', $client->fields['webhook']['url']);
+    }
+
+    public function test_async_render_requires_pdf_storage(): void
+    {
+        $this->expectException(InvalidRenderConfigurationException::class);
+        $this->expectExceptionMessage('BladePDF async renders require storePdf()');
+
+        $this->pendingRender(new CapturingBladePdfClient())
+            ->fromTemplate('invoice.standard')
+            ->async();
     }
 
     public function test_it_renders_local_views_as_html_source(): void
@@ -209,6 +245,14 @@ class CapturingBladePdfClient extends BladePdfClient
         $this->assets = $assets;
 
         return 'pdf-bytes';
+    }
+
+    public function renderAsync(array $fields, array $assets = []): RenderSubmission
+    {
+        $this->fields = array_filter($fields, static fn (mixed $value): bool => $value !== null);
+        $this->assets = $assets;
+
+        return new RenderSubmission('request-async-1', $this->fields['metadata']['reference'] ?? null);
     }
 }
 

@@ -101,22 +101,41 @@ BladePDF::fromView('pdf.invoice', ['invoice' => $invoice])
 
 ## Per-request webhooks
 
-Use `webhook()` when a single render should notify a specific endpoint in addition to any dashboard-configured webhooks:
+Use `webhook()` when a single asynchronous render should notify a specific endpoint in addition to any dashboard-configured webhooks:
 
 ```php
 BladePDF::fromTemplate('invoice.standard', $context)
     ->reference($invoice->uuid)
+    ->storePdf()
     ->webhook('https://example.com/bladepdf/webhook', 'whsec_request_secret')
-    ->pdf();
+    ->async();
 ```
 
 The optional third argument limits which events are delivered:
 
 ```php
 BladePDF::fromHtml($html)
+    ->storePdf()
     ->webhook('https://example.com/bladepdf/webhook', 'whsec_request_secret', ['pdf.rendered'])
-    ->pdf();
+    ->async();
 ```
+
+## Asynchronous renders
+
+Submit a render without waiting for the generated PDF. The request still waits for gateway validation, quota admission, input staging, and durable BullMQ enqueueing. Rendering then continues in the background and delivers its result through the configured webhook:
+
+```php
+$submission = BladePDF::fromTemplate('invoice.standard', $context)
+    ->reference($invoice->uuid)
+    ->storePdf()
+    ->webhook(route('webhooks.bladepdf'), config('services.bladepdf.webhook_secret'))
+    ->async();
+
+$submission->requestId;
+$submission->reference;
+```
+
+`storePdf()` is required for every asynchronous render. The gateway returns `202 Accepted` only after the render job has been added to its worker queue. Validation, storage quota, upload, and enqueueing failures are still thrown synchronously.
 
 ## PDF options
 

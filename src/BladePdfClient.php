@@ -8,6 +8,7 @@ use BladePDF\Laravel\Exceptions\MissingApiKeyException;
 use BladePDF\Laravel\Exceptions\RenderFailedException;
 use BladePDF\Laravel\Support\ResolvedAsset;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 class BladePdfClient
@@ -44,6 +45,48 @@ class BladePdfClient
      * @param  array<int, ResolvedAsset>  $assets
      */
     public function render(array $fields, array $assets = []): string
+    {
+        $response = $this->sendRenderRequest($fields, $assets);
+
+        if (! $response->successful()) {
+            throw RenderFailedException::fromResponse($response->status(), $response->body());
+        }
+
+        return $response->body();
+    }
+
+    /**
+     * @param  array<string, mixed>  $fields
+     * @param  array<int, ResolvedAsset>  $assets
+     */
+    public function renderAsync(array $fields, array $assets = []): RenderSubmission
+    {
+        $response = $this->sendRenderRequest($fields, $assets, true);
+
+        if ($response->status() !== 202) {
+            throw RenderFailedException::fromResponse($response->status(), $response->body());
+        }
+
+        $payload = $response->json();
+        $requestId = is_array($payload) ? ($payload['request_id'] ?? null) : null;
+
+        if (! is_string($requestId) || trim($requestId) === '') {
+            throw new RenderFailedException('BladePDF async render response is missing a valid request_id.');
+        }
+
+        $reference = $payload['reference'] ?? null;
+
+        return new RenderSubmission(
+            requestId: $requestId,
+            reference: is_string($reference) ? $reference : null,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $fields
+     * @param  array<int, ResolvedAsset>  $assets
+     */
+    protected function sendRenderRequest(array $fields, array $assets = [], bool $async = false): Response
     {
         $baseUrl = rtrim((string) $this->config->get('bladepdf.base_url', 'https://api.bladepdf.com'), '/');
         $apiKey = trim((string) $this->config->get('bladepdf.api_key'));
@@ -86,8 +129,8 @@ class BladePdfClient
             $multipart[] = $asset->toMultipartPart();
         }
 
-        $response = Http::withToken($apiKey)
-            ->accept('application/pdf')
+        $request = Http::withToken($apiKey)
+            ->accept($async ? 'application/json' : 'application/pdf')
             ->timeout((int) $this->config->get('bladepdf.timeout', 60))
             ->connectTimeout((int) $this->config->get('bladepdf.connect_timeout', 10))
             ->retry(
@@ -98,14 +141,15 @@ class BladePdfClient
             ->withOptions([
                 'verify' => (bool) $this->config->get('bladepdf.verify_ssl', true),
                 'multipart' => $multipart,
-            ])
-            ->send('POST', $this->endpointUrl($baseUrl, '/render'));
+            ]);
 
-        if (! $response->successful()) {
-            throw RenderFailedException::fromResponse($response->status(), $response->body());
+        if ($async) {
+            $request = $request->withHeaders([
+                'Prefer' => 'respond-async',
+            ]);
         }
 
-        return $response->body();
+        return $request->send('POST', $this->endpointUrl($baseUrl, '/render'));
     }
 
     protected function endpointUrl(string $baseUrl, string $path): string
