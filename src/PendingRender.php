@@ -77,6 +77,8 @@ class PendingRender
      */
     protected array $manualAssets = [];
 
+    protected ?bool $autoResolveAssets = null;
+
     public function __construct(
         protected BladePdfClient $client,
         protected AssetResolver $assetResolver,
@@ -230,6 +232,18 @@ class PendingRender
         $this->emulateMedia = $media;
 
         return $this;
+    }
+
+    public function resolveAssets(bool $resolve = true): self
+    {
+        $this->autoResolveAssets = $resolve;
+
+        return $this;
+    }
+
+    public function withoutAssetResolution(): self
+    {
+        return $this->resolveAssets(false);
     }
 
     public function withAsset(string $path, ?string $target = null, ?string $mime = null): self
@@ -449,7 +463,7 @@ class PendingRender
         $headerHtml = $this->headerHtml ?? ($this->headerView ? $this->renderView($this->headerView, $this->headerData) : null);
         $footerHtml = $this->footerHtml ?? ($this->footerView ? $this->renderView($this->footerView, $this->footerData) : null);
 
-        $resolved = $this->assetResolver->resolve($bodyHtml, $headerHtml, $footerHtml, $this->manualAssets);
+        $resolved = $this->assetResolver->resolve($bodyHtml, $headerHtml, $footerHtml, $this->manualAssets, $this->autoResolveAssets);
 
         return $this->client->render([
             'source' => ['type' => self::SOURCE_HTML],
@@ -482,7 +496,7 @@ class PendingRender
         $headerHtml = $this->headerHtml ?? ($this->headerView ? $this->renderView($this->headerView, $this->headerData) : null);
         $footerHtml = $this->footerHtml ?? ($this->footerView ? $this->renderView($this->footerView, $this->footerData) : null);
 
-        $resolved = $this->assetResolver->resolve($bodyHtml, $headerHtml, $footerHtml, $this->manualAssets);
+        $resolved = $this->assetResolver->resolve($bodyHtml, $headerHtml, $footerHtml, $this->manualAssets, $this->autoResolveAssets);
 
         return $this->client->renderAsync([
             'source' => ['type' => self::SOURCE_HTML],
@@ -509,7 +523,7 @@ class PendingRender
             throw new InvalidRenderConfigurationException('BladePDF cloud template renders do not support header_html or footer_html overrides.');
         }
 
-        $resolved = $this->assetResolver->resolve('', null, null, $this->manualAssets);
+        $resolved = $this->assetResolver->resolve('', null, null, $this->manualAssets, $this->autoResolveAssets);
 
         return $this->client->render([
             'source' => [
@@ -537,7 +551,7 @@ class PendingRender
             throw new InvalidRenderConfigurationException('BladePDF cloud template renders do not support header_html or footer_html overrides.');
         }
 
-        $resolved = $this->assetResolver->resolve('', null, null, $this->manualAssets);
+        $resolved = $this->assetResolver->resolve('', null, null, $this->manualAssets, $this->autoResolveAssets);
 
         return $this->client->renderAsync([
             'source' => [

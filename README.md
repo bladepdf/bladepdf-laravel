@@ -191,6 +191,24 @@ Examples of local references that can be rewritten:
 
 External URLs such as CDN files are preserved as-is.
 
+Automatic asset resolution is enabled by default. You can disable it globally when you want BladePDF to leave your HTML untouched:
+
+```env
+BLADEPDF_AUTO_RESOLVE_ASSETS=false
+```
+
+You can also disable it for a single render:
+
+```php
+return BladePDF::fromView('pdf.invoice', ['invoice' => $invoice])
+    ->withoutAssetResolution()
+    ->render()
+    ->response();
+```
+
+Manual assets added with `withAsset()` or `overrideAsset()` are still uploaded when automatic resolution is disabled.
+If you prefer a toggle-style call, `resolveAssets(false)` is equivalent to `withoutAssetResolution()`.
+
 ## Manual assets
 
 If you want to upload an asset yourself and reference it manually inside custom HTML, you can attach it explicitly:

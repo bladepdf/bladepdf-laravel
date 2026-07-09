@@ -25,4 +25,20 @@ class AssetResolverTest extends TestCase
         $this->assertStringContainsString('asset:///', $result['html']);
         $this->assertCount(3, $result['assets']);
     }
+
+    public function test_it_can_skip_automatic_asset_resolution(): void
+    {
+        $publicPath = __DIR__.'/Fixtures/public';
+
+        app()->usePublicPath($publicPath);
+
+        file_put_contents($publicPath.'/logo.png', 'image-bytes');
+
+        $resolver = app(AssetResolver::class);
+
+        $result = $resolver->resolve('<img src="/logo.png">', autoResolveAssets: false);
+
+        $this->assertSame('<img src="/logo.png">', $result['html']);
+        $this->assertCount(0, $result['assets']);
+    }
 }

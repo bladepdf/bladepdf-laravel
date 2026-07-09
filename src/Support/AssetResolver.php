@@ -22,13 +22,23 @@ class AssetResolver
      * @param  array<int, array{path:string,target?:string,mime?:string}>  $manualAssets
      * @return array{html:string,header_html:?string,footer_html:?string,assets:array<int, ResolvedAsset>}
      */
-    public function resolve(string $html, ?string $headerHtml = null, ?string $footerHtml = null, array $manualAssets = []): array
+    public function resolve(
+        string $html,
+        ?string $headerHtml = null,
+        ?string $footerHtml = null,
+        array $manualAssets = [],
+        ?bool $autoResolveAssets = null,
+    ): array
     {
         $assetBag = new AssetBag();
 
-        $html = $this->rewriteHtml($html, $assetBag);
-        $headerHtml = $headerHtml !== null ? $this->rewriteHtml($headerHtml, $assetBag) : null;
-        $footerHtml = $footerHtml !== null ? $this->rewriteHtml($footerHtml, $assetBag) : null;
+        $autoResolveAssets ??= $this->shouldAutoResolveAssets();
+
+        if ($autoResolveAssets) {
+            $html = $this->rewriteHtml($html, $assetBag);
+            $headerHtml = $headerHtml !== null ? $this->rewriteHtml($headerHtml, $assetBag) : null;
+            $footerHtml = $footerHtml !== null ? $this->rewriteHtml($footerHtml, $assetBag) : null;
+        }
 
         foreach ($manualAssets as $manualAsset) {
             $path = $manualAsset['path'];
@@ -46,7 +56,7 @@ class AssetResolver
             $mimeType = $mime ?: ($this->guessMimeType($resolvedPath) ?: 'application/octet-stream');
             $fieldName = $target ? 'asset:///'.ltrim($target, '/') : null;
 
-            if ($this->isCssFile($resolvedPath)) {
+            if ($autoResolveAssets && $this->isCssFile($resolvedPath)) {
                 $contents = $this->cssRewriter->rewrite($contents, $assetBag, dirname($resolvedPath));
             }
 
@@ -59,6 +69,11 @@ class AssetResolver
             'footer_html' => $footerHtml,
             'assets' => $assetBag->all(),
         ];
+    }
+
+    protected function shouldAutoResolveAssets(): bool
+    {
+        return (bool) $this->config->get('bladepdf.auto_resolve_assets', true);
     }
 
     public function rewriteHtml(string $html, AssetBag $assetBag): string

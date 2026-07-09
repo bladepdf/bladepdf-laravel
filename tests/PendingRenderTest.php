@@ -128,6 +128,46 @@ class PendingRenderTest extends TestCase
         $this->assertSame('https://app.bladepdf.test/pdf/workspace-1/request-1.pdf', $result->storedPdfUrl());
     }
 
+    public function test_asset_resolution_can_be_disabled_for_a_single_render(): void
+    {
+        $client = new CapturingBladePdfClient();
+        $publicPath = $this->createTemporaryPublicPath();
+
+        app()->usePublicPath($publicPath);
+
+        file_put_contents($publicPath.'/logo.png', 'image-bytes');
+
+        $this->pendingRender($client)
+            ->fromHtml('<img src="/logo.png">')
+            ->withoutAssetResolution()
+            ->render();
+
+        $this->assertSame('<img src="/logo.png">', $client->fields['html']);
+        $this->assertCount(0, $client->assets);
+    }
+
+    public function test_global_asset_resolution_config_can_be_disabled_while_manual_assets_still_upload(): void
+    {
+        config()->set('bladepdf.auto_resolve_assets', false);
+
+        $client = new CapturingBladePdfClient();
+        $publicPath = $this->createTemporaryPublicPath();
+        $assetPath = $this->createTemporaryAsset('logo-bytes');
+
+        app()->usePublicPath($publicPath);
+
+        file_put_contents($publicPath.'/logo.png', 'image-bytes');
+
+        $this->pendingRender($client)
+            ->fromHtml('<img src="/logo.png"><img src="asset:///brand-logo.png">')
+            ->withAsset($assetPath, 'brand-logo.png')
+            ->render();
+
+        $this->assertSame('<img src="/logo.png"><img src="asset:///brand-logo.png">', $client->fields['html']);
+        $this->assertCount(1, $client->assets);
+        $this->assertSame('asset:///brand-logo.png', $client->assets[0]->fieldName);
+    }
+
     public function test_async_render_requires_pdf_storage(): void
     {
         $this->expectException(InvalidRenderConfigurationException::class);
@@ -235,6 +275,15 @@ class PendingRenderTest extends TestCase
         file_put_contents($path, $contents);
 
         return $path;
+    }
+
+    protected function createTemporaryPublicPath(): string
+    {
+        $directory = sys_get_temp_dir().'/bladepdf-public-'.uniqid('', true);
+
+        mkdir($directory);
+
+        return $directory;
     }
 }
 

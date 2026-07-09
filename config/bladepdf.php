@@ -19,6 +19,8 @@ return [
 
     'user_agent' => env('BLADEPDF_USER_AGENT', 'bladepdf-laravel/1.0'),
 
+    'auto_resolve_assets' => filter_var(env('BLADEPDF_AUTO_RESOLVE_ASSETS', true), FILTER_VALIDATE_BOOL),
+
     'local_hosts' => array_values(array_filter(array_unique([
         parse_url((string) env('APP_URL', ''), PHP_URL_HOST) ?: null,
         'localhost',
