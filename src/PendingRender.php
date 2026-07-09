@@ -7,7 +7,6 @@ namespace BladePDF\Laravel;
 use BladePDF\Laravel\Exceptions\InvalidRenderConfigurationException;
 use BladePDF\Laravel\Support\AssetResolver;
 use Illuminate\Contracts\View\Factory as ViewFactory;
-use Illuminate\Http\Response;
 
 class PendingRender
 {
@@ -440,10 +439,10 @@ class PendingRender
         return $this->withOptions(['outline' => $outline]);
     }
 
-    public function pdf(): string
+    public function render(): RenderResult
     {
         if ($this->source === self::SOURCE_TEMPLATE) {
-            return $this->renderTemplatePdf();
+            return $this->renderTemplate();
         }
 
         $bodyHtml = $this->rawHtml ?? $this->renderView($this->view, $this->data);
@@ -500,40 +499,7 @@ class PendingRender
         ], $resolved['assets']);
     }
 
-    public function response(?string $filename = 'document.pdf'): Response
-    {
-        return response($this->pdf(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$filename.'"',
-        ]);
-    }
-
-    public function download(?string $filename = 'document.pdf'): Response
-    {
-        return response($this->pdf(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-        ]);
-    }
-
-    public function save(string $path): string
-    {
-        file_put_contents($path, $this->pdf());
-
-        return $path;
-    }
-
-    public function base64Pdf(): string
-    {
-        return base64_encode($this->pdf());
-    }
-
-    public function base64(): string
-    {
-        return $this->base64Pdf();
-    }
-
-    protected function renderTemplatePdf(): string
+    protected function renderTemplate(): RenderResult
     {
         if ($this->templateId === null) {
             throw new InvalidRenderConfigurationException('BladePDF template source requires a template id.');

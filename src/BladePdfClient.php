@@ -44,7 +44,7 @@ class BladePdfClient
      * @param  array<string, mixed>  $fields
      * @param  array<int, ResolvedAsset>  $assets
      */
-    public function render(array $fields, array $assets = []): string
+    public function render(array $fields, array $assets = []): RenderResult
     {
         $response = $this->sendRenderRequest($fields, $assets);
 
@@ -52,7 +52,10 @@ class BladePdfClient
             throw RenderFailedException::fromResponse($response->status(), $response->body());
         }
 
-        return $response->body();
+        return new RenderResult(
+            pdf: $response->body(),
+            storedPdfUrl: $this->storedPdfUrlFromResponse($response),
+        );
     }
 
     /**
@@ -155,6 +158,25 @@ class BladePdfClient
     protected function endpointUrl(string $baseUrl, string $path): string
     {
         return rtrim($baseUrl, '/').'/'.ltrim($path, '/');
+    }
+
+    protected function storedPdfUrlFromResponse(Response $response): ?string
+    {
+        $link = $response->header('Link');
+        if (! is_string($link) || trim($link) === '') {
+            return null;
+        }
+
+        foreach (explode(',', $link) as $part) {
+            if (
+                preg_match('/<([^>]+)>/', $part, $urlMatch) === 1
+                && preg_match('/;\s*rel="?stored-pdf"?/i', $part) === 1
+            ) {
+                return $urlMatch[1];
+            }
+        }
+
+        return null;
     }
 
     protected function encodeField(mixed $value): string

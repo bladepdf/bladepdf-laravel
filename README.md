@@ -37,6 +37,7 @@ return BladePDF::fromView('pdf.invoice', [
     ->showBackground()
     ->waitUntil('networkidle0')
     ->emulateMedia('screen')
+    ->render()
     ->response('invoice.pdf');
 ```
 
@@ -53,6 +54,7 @@ return BladePDF::fromTemplate('invoice.standard', [
     ->storePdf()
     ->format('A4')
     ->showBackground()
+    ->render()
     ->response('invoice.pdf');
 ```
 
@@ -85,7 +87,7 @@ Use a reference to correlate a render with your own model:
 BladePDF::fromTemplate('invoice.standard', $context)
     ->reference($invoice->uuid)
     ->storePdf()
-    ->pdf();
+    ->render();
 ```
 
 For raw HTML or local Blade view renders, you may also provide a dashboard display name:
@@ -94,6 +96,7 @@ For raw HTML or local Blade view renders, you may also provide a dashboard displ
 BladePDF::fromView('pdf.invoice', ['invoice' => $invoice])
     ->templateName('Tenant invoice')
     ->reference($invoice->uuid)
+    ->render()
     ->pdf();
 ```
 
@@ -122,7 +125,7 @@ BladePDF::fromHtml($html)
 
 ## Asynchronous renders
 
-Submit a render without waiting for the generated PDF. The request still waits for gateway validation, quota admission, input staging, and durable BullMQ enqueueing. Rendering then continues in the background and delivers its result through the configured webhook:
+Submit a render without waiting for the generated PDF. The request still waits for validation, quota admission, and input staging. Rendering then continues in the background and delivers its result through the configured webhook:
 
 ```php
 $submission = BladePDF::fromTemplate('invoice.standard', $context)
@@ -135,7 +138,7 @@ $submission->requestId;
 $submission->reference;
 ```
 
-`storePdf()` is required for every asynchronous render. The gateway returns `202 Accepted` only after the render job has been added to its worker queue. Validation, storage quota, upload, and enqueueing failures are still thrown synchronously.
+`storePdf()` is required for every asynchronous render. The API returns `202 Accepted` only after the render has been accepted for background processing. Validation, storage quota, upload, and capacity failures are still thrown synchronously.
 
 ## PDF options
 
@@ -153,6 +156,7 @@ BladePDF::fromHtml('<h1>Hello</h1>')
     ->preferCssPageSize()
     ->waitForFonts()
     ->outline()
+    ->render()
     ->pdf();
 ```
 
@@ -161,6 +165,7 @@ You can still pass raw options when you need lower-level control:
 ```php
 BladePDF::fromHtml('<h1>Hello</h1>')
     ->withOptions(['printBackground' => true])
+    ->render()
     ->pdf();
 ```
 
@@ -195,6 +200,7 @@ $html = '<html><body><img src="asset:///brand-logo.png"></body></html>';
 
 return BladePDF::fromHtml($html)
     ->withAsset(public_path('images/logo.png'), 'brand-logo.png')
+    ->render()
     ->response();
 ```
 
@@ -203,6 +209,7 @@ For cloud templates, use `overrideAsset()` to replace a stored `asset:///...` re
 ```php
 return BladePDF::fromTemplate('invoice.standard', $context)
     ->overrideAsset('brand-logo.png', public_path('images/tenant-logo.png'))
+    ->render()
     ->response();
 ```
 
@@ -213,19 +220,24 @@ Request asset override targets must be simple file names containing only letters
 ```php
 return BladePDF::fromHtml('<h1>Hello world</h1>')
     ->format('A4')
+    ->render()
     ->response();
 ```
 
 ## Saving to disk
 
 ```php
-BladePDF::fromView('pdf.report')->save(storage_path('app/report.pdf'));
+BladePDF::fromView('pdf.report')
+    ->render()
+    ->save(storage_path('app/report.pdf'));
 ```
 
 ## Base64 output
 
 ```php
-$base64 = BladePDF::fromTemplate('invoice.standard', $context)->base64Pdf();
+$base64 = BladePDF::fromTemplate('invoice.standard', $context)
+    ->render()
+    ->base64Pdf();
 ```
 
 ## Suggested facade alias

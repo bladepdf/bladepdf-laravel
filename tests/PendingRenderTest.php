@@ -7,6 +7,7 @@ namespace BladePDF\Laravel\Tests;
 use BladePDF\Laravel\BladePdfClient;
 use BladePDF\Laravel\Exceptions\InvalidRenderConfigurationException;
 use BladePDF\Laravel\PendingRender;
+use BladePDF\Laravel\RenderResult;
 use BladePDF\Laravel\RenderSubmission;
 use BladePDF\Laravel\Support\AssetResolver;
 
@@ -28,6 +29,7 @@ class PendingRenderTest extends TestCase
             ->format('A4')
             ->margins(10, 10, 15, 10)
             ->showBackground()
+            ->render()
             ->pdf();
 
         $this->assertSame('pdf-bytes', $pdf);
@@ -70,7 +72,7 @@ class PendingRenderTest extends TestCase
             ->preferCssPageSize()
             ->waitForFonts()
             ->outline()
-            ->pdf();
+            ->render();
 
         $this->assertSame(['type' => 'html'], $client->fields['source']);
         $this->assertSame('<h1>Hello</h1>', $client->fields['html']);
@@ -113,6 +115,19 @@ class PendingRenderTest extends TestCase
         $this->assertSame('https://example.com/bladepdf', $client->fields['webhook']['url']);
     }
 
+    public function test_render_returns_pdf_bytes_and_stored_pdf_url(): void
+    {
+        $client = new CapturingBladePdfClient();
+
+        $result = $this->pendingRender($client)
+            ->fromHtml('<h1>Hello</h1>')
+            ->storePdf()
+            ->render();
+
+        $this->assertSame('pdf-bytes', $result->pdf());
+        $this->assertSame('https://app.bladepdf.test/pdf/workspace-1/request-1.pdf', $result->storedPdfUrl());
+    }
+
     public function test_async_render_requires_pdf_storage(): void
     {
         $this->expectException(InvalidRenderConfigurationException::class);
@@ -132,7 +147,7 @@ class PendingRenderTest extends TestCase
 
         $this->pendingRender($client)
             ->fromView('invoice', ['invoice' => 'INV-1'])
-            ->pdf();
+            ->render();
 
         $this->assertSame(['type' => 'html'], $client->fields['source']);
         $this->assertSame('<h1>Invoice INV-1</h1>', trim($client->fields['html']));
@@ -145,7 +160,7 @@ class PendingRenderTest extends TestCase
         $this->pendingRender(new CapturingBladePdfClient())
             ->fromTemplate('invoice.standard')
             ->withHeaderHtml('<p>Header</p>')
-            ->pdf();
+            ->render();
     }
 
     public function test_template_render_rejects_template_name_metadata(): void
@@ -155,7 +170,7 @@ class PendingRenderTest extends TestCase
         $this->pendingRender(new CapturingBladePdfClient())
             ->fromTemplate('invoice.standard')
             ->templateName('Should not be accepted')
-            ->pdf();
+            ->render();
     }
 
     public function test_asset_override_targets_match_gateway_field_name_rules(): void
@@ -173,7 +188,7 @@ class PendingRenderTest extends TestCase
         $this->pendingRender(new CapturingBladePdfClient())
             ->fromHtml('<h1>Hello</h1>')
             ->webhook('ftp://example.com/hook', 'whsec_test')
-            ->pdf();
+            ->render();
     }
 
     public function test_webhook_events_are_validated(): void
@@ -183,7 +198,7 @@ class PendingRenderTest extends TestCase
         $this->pendingRender(new CapturingBladePdfClient())
             ->fromHtml('<h1>Hello</h1>')
             ->webhook('https://example.com/hook', 'whsec_test', ['invoice.paid'])
-            ->pdf();
+            ->render();
     }
 
     public function test_client_encodes_booleans_and_empty_context_for_multipart_fields(): void
@@ -239,12 +254,15 @@ class CapturingBladePdfClient extends BladePdfClient
     {
     }
 
-    public function render(array $fields, array $assets = []): string
+    public function render(array $fields, array $assets = []): RenderResult
     {
         $this->fields = array_filter($fields, static fn (mixed $value): bool => $value !== null);
         $this->assets = $assets;
 
-        return 'pdf-bytes';
+        return new RenderResult(
+            'pdf-bytes',
+            'https://app.bladepdf.test/pdf/workspace-1/request-1.pdf',
+        );
     }
 
     public function renderAsync(array $fields, array $assets = []): RenderSubmission
