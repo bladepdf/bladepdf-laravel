@@ -12,6 +12,8 @@
 *.woff2 binary
 
 /.github export-ignore
+/examples export-ignore
+/output export-ignore
 /tests export-ignore
 /phpunit.xml export-ignore
 /.editorconfig export-ignore

@@ -1,15 +1,28 @@
 {
   "name": "bladepdf/laravel",
-  "description": "Official Laravel package for the BladePDF PDF generation API.",
+  "description": "Generate production-ready PDFs from Laravel Blade views with managed Chromium, automatic assets, and a fluent API.",
+  "homepage": "https://bladepdf.com",
   "type": "library",
   "license": "MIT",
   "keywords": [
     "bladepdf",
     "laravel",
+    "blade",
+    "blade templates",
     "pdf",
+    "pdf generation",
+    "html to pdf",
+    "invoice",
+    "tailwind css",
+    "chromium",
     "puppeteer",
     "api"
   ],
+  "support": {
+    "docs": "https://docs.bladepdf.com",
+    "issues": "https://github.com/bladepdf/bladepdf-laravel/issues",
+    "source": "https://github.com/bladepdf/bladepdf-laravel"
+  },
   "require": {
     "php": "^8.2",
     "guzzlehttp/guzzle": "^7.5",
