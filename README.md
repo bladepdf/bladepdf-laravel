@@ -129,27 +129,6 @@ Start with the [quickstart](https://docs.bladepdf.com/quickstart), then explore 
 | Stored PDFs | Yes | Retrieve the signed URL from the result or webhook |
 | Laravel versions | 10-13 | PHP 8.2 or newer |
 
-## Roadmap
-
-Cloud templates, hosted assets, async renders, stored PDFs, and signed webhooks are already available. The deliberately short public roadmap is:
-
-- Usage and analytics views
-- Teams and workspaces
-- More first-party SDKs
-
-Roadmap items are directional until they are documented and released.
-
-## Contributing
-
-Contributions are welcome. Keep changes focused, add tests for behavior changes, and run:
-
-```bash
-composer lint
-composer test
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the pull request checklist.
-
 ## License
 
 BladePDF for Laravel is open-source software licensed under the [MIT License](LICENSE).
