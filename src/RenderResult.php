@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace BladePDF\Laravel;
 
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 final readonly class RenderResult
 {
@@ -28,7 +30,10 @@ final readonly class RenderResult
     {
         return response($this->pdf, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+            'Content-Disposition' => $this->contentDisposition(
+                HeaderUtils::DISPOSITION_INLINE,
+                $filename,
+            ),
         ]);
     }
 
@@ -36,7 +41,10 @@ final readonly class RenderResult
     {
         return response($this->pdf, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Content-Disposition' => $this->contentDisposition(
+                HeaderUtils::DISPOSITION_ATTACHMENT,
+                $filename,
+            ),
         ]);
     }
 
@@ -55,5 +63,23 @@ final readonly class RenderResult
     public function base64(): string
     {
         return $this->base64Pdf();
+    }
+
+    private function contentDisposition(string $disposition, ?string $filename): string
+    {
+        $filename = $filename === null || trim($filename) === ''
+            ? 'document.pdf'
+            : $filename;
+
+        $filename = str_replace(['/', '\\'], '_', $filename);
+        $fallback = Str::ascii($filename);
+        $fallback = preg_replace('/[^\x20-\x7e]/', '', $fallback) ?? '';
+        $fallback = str_replace('%', '_', $fallback);
+
+        if (trim($fallback) === '') {
+            $fallback = 'document.pdf';
+        }
+
+        return HeaderUtils::makeDisposition($disposition, $filename, $fallback);
     }
 }
