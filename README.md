@@ -1,6 +1,10 @@
 <p align="center">
   <a href="https://bladepdf.com">
-    <img src=".github/assets/bladepdf-logo.webp" width="360" alt="BladePDF">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/bladepdf-logo-on-dark.webp">
+      <source media="(prefers-color-scheme: light)" srcset=".github/assets/bladepdf-logo-on-light.webp">
+      <img src=".github/assets/bladepdf-logo-on-light.webp" width="360" alt="BladePDF">
+    </picture>
   </a>
 </p>
 
