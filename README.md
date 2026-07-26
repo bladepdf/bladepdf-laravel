@@ -47,6 +47,16 @@ Configuration is auto-discovered. Publish it only when you need to change timeou
 php artisan vendor:publish --tag=bladepdf-config
 ```
 
+## Using Spatie Laravel PDF?
+
+Install the dedicated driver to keep the `Spatie\LaravelPdf\Facades\Pdf` API while BladePDF provides the managed Chromium backend:
+
+```bash
+composer require bladepdf/spatie-laravel-pdf-driver
+```
+
+See the [Spatie Laravel PDF integration guide](https://docs.bladepdf.com/integrations/spatie-laravel-pdf) for default-driver configuration, supported options, queues, and compatibility notes.
+
 ## 30-second example
 
 ```php
