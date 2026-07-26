@@ -36,7 +36,8 @@
   },
   "autoload": {
     "psr-4": {
-      "BladePDF\\Laravel\\": "src/"
+      "BladePDF\\Laravel\\": "src/",
+      "BladePDF\\Webhooks\\": "src/Webhooks/"
     }
   },
   "autoload-dev": {

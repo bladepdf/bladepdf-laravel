@@ -51,6 +51,35 @@ Configuration is auto-discovered. Publish it only when you need to change timeou
 php artisan vendor:publish --tag=bladepdf-config
 ```
 
+## Verify webhooks
+
+Store the signing secret shown when you create a BladePDF webhook endpoint:
+
+```env
+BLADEPDF_WEBHOOK_SECRET=whsec_...
+```
+
+Then verify the request before decoding or processing its payload:
+
+```php
+use BladePDF\Webhooks\SignatureValidator;
+use Illuminate\Http\Request;
+
+public function handle(Request $request)
+{
+    abort_unless(SignatureValidator::isValid($request), 401);
+
+    $event = $request->json()->all();
+
+    // Handle the verified event...
+}
+```
+
+The validator checks the signature against the exact raw request body and
+rejects timestamps outside a five-minute tolerance by default. Pass a secret as
+the second argument for a per-request webhook, or publish the configuration to
+customize `webhook_tolerance`.
+
 ## Using Spatie Laravel PDF?
 
 Install the dedicated driver to keep the `Spatie\LaravelPdf\Facades\Pdf` API while BladePDF provides the managed Chromium backend:

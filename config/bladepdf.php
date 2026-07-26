@@ -7,6 +7,10 @@ return [
 
     'api_key' => env('BLADEPDF_API_KEY'),
 
+    'webhook_secret' => env('BLADEPDF_WEBHOOK_SECRET'),
+
+    'webhook_tolerance' => (int) env('BLADEPDF_WEBHOOK_TOLERANCE', 300),
+
     'timeout' => (int) env('BLADEPDF_TIMEOUT', 60),
 
     'connect_timeout' => (int) env('BLADEPDF_CONNECT_TIMEOUT', 10),
