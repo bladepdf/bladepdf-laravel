@@ -90,6 +90,19 @@ class PendingRenderTest extends TestCase
         $this->assertTrue($client->fields['pdf_options']['outline']);
     }
 
+    public function test_wait_function_selects_function_readiness_mode(): void
+    {
+        $client = new CapturingBladePdfClient();
+
+        $this->pendingRender($client)
+            ->fromHtml('<p>Ready</p>')
+            ->waitFunction('window.pdfReady === true')
+            ->render();
+
+        $this->assertSame('function', $client->fields['wait_until']);
+        $this->assertSame('window.pdfReady === true', $client->fields['wait_function']);
+    }
+
     public function test_it_submits_an_async_render_and_returns_its_identifiers(): void
     {
         $client = new CapturingBladePdfClient();

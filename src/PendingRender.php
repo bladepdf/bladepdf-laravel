@@ -224,6 +224,12 @@ class PendingRender
     {
         $this->waitFunction = $waitFunction;
 
+        if ($waitFunction !== null) {
+            $this->waitUntil = 'function';
+        } elseif ($this->waitUntil === 'function') {
+            $this->waitUntil = null;
+        }
+
         return $this;
     }
 
