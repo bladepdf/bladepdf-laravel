@@ -4,80 +4,61 @@ declare(strict_types=1);
 
 namespace BladePDF\Laravel\Tests;
 
-use BladePDF\Laravel\Support\AssetResolver;
+use BladePDF\Assets\AssetResolver;
+use BladePDF\Exceptions\AssetAccessDeniedException;
 
 class AssetResolverTest extends TestCase
 {
-    public function test_it_rewrites_local_html_assets_into_asset_scheme(): void
+    public function test_service_provider_configures_public_and_storage_roots_without_base_path(): void
     {
-        $publicPath = __DIR__.'/Fixtures/public';
+        $public = $this->makeDirectory('bladepdf-public-');
+        $storage = $this->makeDirectory('bladepdf-storage-');
+        $outside = $this->makeDirectory('bladepdf-outside-');
 
-        app()->usePublicPath($publicPath);
+        file_put_contents($public.'/public.png', 'public');
+        file_put_contents($storage.'/stored.png', 'stored');
+        file_put_contents($outside.'/.env', 'APP_KEY=secret');
 
-        file_put_contents($publicPath.'/logo.png', 'image-bytes');
-        file_put_contents($publicPath.'/css/app.css', 'body{background:url("../logo.png");}@font-face{src:url("../fonts/test.woff2");}');
-        file_put_contents($publicPath.'/fonts/test.woff2', 'font-bytes');
+        config()->set('bladepdf.document_root', $public);
+        config()->set('bladepdf.asset_roots', [$public, $storage]);
+        config()->set('bladepdf.local_hosts', ['localhost']);
+        app()->forgetInstance(AssetResolver::class);
 
-        $resolver = app(AssetResolver::class);
-
-        $result = $resolver->resolve('<html><head><link rel="stylesheet" href="/css/app.css"></head><body><img src="/logo.png"></body></html>');
-
-        $this->assertStringContainsString('asset:///', $result['html']);
-        $this->assertCount(3, $result['assets']);
-    }
-
-    public function test_it_can_skip_automatic_asset_resolution(): void
-    {
-        $publicPath = __DIR__.'/Fixtures/public';
-
-        app()->usePublicPath($publicPath);
-
-        file_put_contents($publicPath.'/logo.png', 'image-bytes');
-
-        $resolver = app(AssetResolver::class);
-
-        $result = $resolver->resolve('<img src="/logo.png">', autoResolveAssets: false);
-
-        $this->assertSame('<img src="/logo.png">', $result['html']);
-        $this->assertCount(0, $result['assets']);
-    }
-
-    public function test_it_assigns_browser_compatible_mime_types_to_web_assets(): void
-    {
-        $publicPath = __DIR__.'/Fixtures/public';
-
-        app()->usePublicPath($publicPath);
-
-        $assets = [
-            'asset.css' => 'body { color: black; }',
-            'asset.js' => 'window.assetLoaded = true;',
-            'asset.svg' => '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
-            'asset.woff2' => 'font-bytes',
-        ];
-
-        foreach ($assets as $filename => $contents) {
-            file_put_contents($publicPath.'/'.$filename, $contents);
-        }
-
-        $result = app(AssetResolver::class)->resolve(
-            html: '',
-            manualAssets: array_map(
-                fn (string $filename): array => ['path' => $publicPath.'/'.$filename],
-                array_keys($assets),
-            ),
-            autoResolveAssets: false,
+        $resolved = app(AssetResolver::class)->resolve(
+            '<img src="/public.png"><img src="stored.png">',
         );
 
-        $mimeTypes = [];
-        foreach ($result['assets'] as $asset) {
-            $mimeTypes[$asset->filename] = $asset->mimeType;
-        }
+        $this->assertCount(2, $resolved->assets);
 
-        $this->assertSame([
-            'asset.css' => 'text/css',
-            'asset.js' => 'text/javascript',
-            'asset.svg' => 'image/svg+xml',
-            'asset.woff2' => 'font/woff2',
-        ], $mimeTypes);
+        $this->expectException(AssetAccessDeniedException::class);
+        app(AssetResolver::class)->resolve('<img src="'.$outside.'/.env">');
+    }
+
+    public function test_javascript_and_svg_are_uploaded_as_opaque_external_files(): void
+    {
+        $public = $this->makeDirectory('bladepdf-assets-');
+        file_put_contents($public.'/app.js', 'fetch("/runtime.json")');
+        file_put_contents($public.'/sprite.svg', '<svg><image href="nested.png"/></svg>');
+
+        config()->set('bladepdf.document_root', $public);
+        config()->set('bladepdf.asset_roots', [$public]);
+        app()->forgetInstance(AssetResolver::class);
+
+        $resolved = app(AssetResolver::class)->resolve(
+            '<script src="/app.js"></script><svg><use href="/sprite.svg#icon"></use></svg>',
+        );
+
+        $this->assertCount(2, $resolved->assets);
+        $this->assertStringContainsString('#icon', $resolved->html);
+        $this->assertSame('fetch("/runtime.json")', $resolved->assets[0]->contents);
+        $this->assertStringContainsString('nested.png', $resolved->assets[1]->contents);
+    }
+
+    private function makeDirectory(string $prefix): string
+    {
+        $directory = sys_get_temp_dir().'/'.$prefix.uniqid('', true);
+        mkdir($directory, 0777, true);
+
+        return $directory;
     }
 }

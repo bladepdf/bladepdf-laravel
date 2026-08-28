@@ -19,7 +19,7 @@
   <a href="https://packagist.org/packages/bladepdf/laravel"><img src="https://img.shields.io/packagist/v/bladepdf/laravel?style=flat-square&label=version" alt="Latest Packagist version"></a>
   <a href="https://packagist.org/packages/bladepdf/laravel/stats"><img src="https://img.shields.io/packagist/dt/bladepdf/laravel?style=flat-square&label=downloads" alt="Packagist downloads"></a>
   <a href="https://packagist.org/packages/bladepdf/laravel"><img src="https://img.shields.io/packagist/dependency-v/bladepdf/laravel/php?style=flat-square" alt="Supported PHP versions"></a>
-  <img src="https://img.shields.io/badge/Laravel-10%20%7C%2011%20%7C%2012%20%7C%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 10, 11, 12, and 13">
+  <img src="https://img.shields.io/badge/Laravel-11%20%7C%2012%20%7C%2013-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 11, 12, and 13">
   <a href="LICENSE"><img src="https://img.shields.io/packagist/l/bladepdf/laravel?style=flat-square" alt="MIT license"></a>
   <a href="https://github.com/bladepdf/bladepdf-laravel/actions/workflows/ci.yml"><img src="https://github.com/bladepdf/bladepdf-laravel/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <a href="https://packagist.org/packages/bladepdf/laravel"><img src="https://img.shields.io/badge/Packagist-auto--updated-168AFE?style=flat-square&logo=packagist&logoColor=white" alt="Packagist auto-update enabled"></a>
@@ -62,7 +62,7 @@ BLADEPDF_WEBHOOK_SECRET=whsec_...
 Then verify the request before decoding or processing its payload:
 
 ```php
-use BladePDF\Webhooks\SignatureValidator;
+use BladePDF\Laravel\Webhooks\SignatureValidator;
 use Illuminate\Http\Request;
 
 public function handle(Request $request)
@@ -170,7 +170,26 @@ Start with the [quickstart](https://docs.bladepdf.com/quickstart), then explore 
 | Signed webhooks | Yes | `pdf.rendered` and `pdf.failed` delivery events |
 | Cloud Blade templates | Yes | Publish templates in the dashboard and render by id |
 | Stored PDFs | Yes | Retrieve the signed URL from the result or webhook |
-| Laravel versions | 10-13 | PHP 8.2 or newer |
+| Laravel versions | 11-13 | PHP 8.2 or newer |
+
+## Upgrading from 1.x
+
+Version 2 delegates all framework-independent rendering, HTTP transport, asset resolution, results, and exceptions to [`bladepdf/php`](https://github.com/bladepdf/bladepdf-php). Normal facade calls such as `BladePDF::fromView()` and `BladePDF::fromHtml()` remain unchanged.
+
+Update both the package and exception imports:
+
+```bash
+composer require bladepdf/laravel:^2.0 --with-all-dependencies
+```
+
+```php
+use BladePDF\Exceptions\BladePdfException;
+use BladePDF\Laravel\Webhooks\SignatureValidator;
+```
+
+The old `BladePDF\Laravel\BladePdfClient`, `BladePDF\Laravel\Support\*`, `BladePDF\Laravel\Exceptions\*`, and Laravel `RenderSubmission` classes were removed. Local automatic asset access is now constrained to `public_path()` and `storage_path('app')`; add intentional directories to the published `asset_roots` configuration. `base_path()` is deliberately not allowed by default.
+
+Spatie driver 1.x is paired with this package's 1.x line. Use `bladepdf/spatie-laravel-pdf-driver:^2.0` with Laravel adapter 2.x.
 
 ## License
 

@@ -21,9 +21,16 @@ return [
 
     'verify_ssl' => filter_var(env('BLADEPDF_VERIFY_SSL', true), FILTER_VALIDATE_BOOL),
 
-    'user_agent' => env('BLADEPDF_USER_AGENT', 'bladepdf-laravel/1.0'),
+    'user_agent' => env('BLADEPDF_USER_AGENT', 'bladepdf-laravel/2.0 bladepdf-php/1.0'),
 
     'auto_resolve_assets' => filter_var(env('BLADEPDF_AUTO_RESOLVE_ASSETS', true), FILTER_VALIDATE_BOOL),
+
+    'document_root' => public_path(),
+
+    'asset_roots' => [
+        public_path(),
+        storage_path('app'),
+    ],
 
     'local_hosts' => array_values(array_filter(array_unique([
         parse_url((string) env('APP_URL', ''), PHP_URL_HOST) ?: null,

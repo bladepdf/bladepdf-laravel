@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace BladePDF\Laravel;
 
-use BladePDF\Laravel\Support\AssetResolver;
+use BladePDF\Assets\AssetResolver;
+use BladePDF\Contracts\RenderClient;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 
 class BladePdfFactory
 {
     public function __construct(
-        protected BladePdfClient $client,
+        protected RenderClient $client,
         protected AssetResolver $assetResolver,
         protected ViewFactory $viewFactory,
     ) {
@@ -26,9 +27,9 @@ class BladePdfFactory
         return $this->make()->fromView($view, $data);
     }
 
-    public function fromHtml(string $html): PendingRender
+    public function fromHtml(string $html, ?string $baseDirectory = null): PendingRender
     {
-        return $this->make()->fromHtml($html);
+        return $this->make()->fromHtml($html, $baseDirectory);
     }
 
     /**

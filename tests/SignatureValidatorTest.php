@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BladePDF\Laravel\Tests;
 
-use BladePDF\Webhooks\SignatureValidator;
+use BladePDF\Laravel\Webhooks\SignatureValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 

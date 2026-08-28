@@ -14,15 +14,23 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    # Laravel 10/11 are EOL; allow compatibility installs while still reporting advisories.
                     - php: '8.2'
-                      testbench: '^8.0'
-                      advisory_blocking: '0'
-                    - php: '8.3'
                       testbench: '^9.0'
                       advisory_blocking: '0'
+                    - php: '8.3'
+                      testbench: '^10.0'
+                      advisory_blocking: '1'
                     - php: '8.4'
                       testbench: '^10.0'
+                      advisory_blocking: '1'
+                    - php: '8.3'
+                      testbench: '^11.0'
+                      advisory_blocking: '1'
+                    - php: '8.4'
+                      testbench: '^11.0'
+                      advisory_blocking: '1'
+                    - php: '8.5'
+                      testbench: '^11.0'
                       advisory_blocking: '1'
 
         name: PHP ${{ matrix.php }} / Testbench ${{ matrix.testbench }}
